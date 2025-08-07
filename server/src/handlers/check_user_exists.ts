@@ -1,14 +1,33 @@
+import { db } from '../db';
+import { tblUserTable } from '../db/schema';
+import { eq, or } from 'drizzle-orm';
+
 export async function checkUserExists(username: string, email: string): Promise<{ usernameExists: boolean; emailExists: boolean }> {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is to:
-    // 1. Query the tbl_user table to check if username already exists
-    // 2. Query the tbl_user table to check if email already exists
-    // 3. Return boolean flags indicating existence of username and/or email
-    // This helps provide specific error messages during registration
-    
-    // Placeholder implementation - returns false for both checks
+  try {
+    // Query to check if either username or email exists
+    const existingUsers = await db.select({
+      username: tblUserTable.username,
+      email: tblUserTable.email
+    })
+      .from(tblUserTable)
+      .where(
+        or(
+          eq(tblUserTable.username, username),
+          eq(tblUserTable.email, email)
+        )
+      )
+      .execute();
+
+    // Check which fields exist by examining the results
+    const usernameExists = existingUsers.some(user => user.username === username);
+    const emailExists = existingUsers.some(user => user.email === email);
+
     return {
-        usernameExists: false,
-        emailExists: false
+      usernameExists,
+      emailExists
     };
+  } catch (error) {
+    console.error('User existence check failed:', error);
+    throw error;
+  }
 }
